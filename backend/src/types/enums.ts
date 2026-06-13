@@ -1,0 +1,13 @@
+export enum Role {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  VOLUNTEER = 'VOLUNTEER',
+  VISITOR = 'VISITOR',
+}
+
+export enum VolunteerStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  INACTIVE = 'INACTIVE',
+}

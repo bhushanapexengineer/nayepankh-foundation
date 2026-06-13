@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  VOLUNTEER
+  VISITOR
+}
+
+enum VolunteerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  INACTIVE
+}
+
+enum ProjectCategory {
+  EDUCATION
+  ENVIRONMENT
+  WOMEN_EMPOWERMENT
+  RURAL_DEVELOPMENT
+  HEALTH
+  SKILL_DEVELOPMENT
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum DonationType {
+  ONE_TIME
+  MONTHLY
+}
+
+enum DonationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum GalleryType {
+  IMAGE
+  VIDEO
+  ALBUM
+}
+
+enum ReportType {
+  VOLUNTEER
+  EVENT
+  DONATION
+  PROJECT
+  ATTENDANCE
+}
+
+enum AnnouncementType {
+  GENERAL
+  EVENT
+  URGENT
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          Role      @default(VISITOR)
+  isVerified    Boolean   @default(false)
+  otp           String?
+  otpExpiry     DateTime?
+  resetToken    String?
+  resetExpiry   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  volunteer     Volunteer?
+  donations     Donation[]
+  auditLogs     AuditLog[]
+  announcements Announcement[]
+  newsletter    Newsletter?
+}
+
+model Volunteer {
+  id                String          @id @default(uuid())
+  userId            String          @unique
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName          String
+  gender            String
+  dateOfBirth       DateTime
+  phone             String
+  address           String
+  city              String
+  state             String
+  country           String          @default("India")
+  education         String
+  occupation        String?
+  skills            String[]
+  interests         String[]
+  experience        String?
+  availability      String
+  emergencyContact  String
+  emergencyPhone    String
+  profilePhoto      String?
+  status            VolunteerStatus @default(PENDING)
+  totalHours        Float           @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  documents         Document[]
+  eventRegistrations EventRegistration[]
+  tasks             Task[]
+  certificates      Certificate[]
+  achievements      Achievement[]
+  attendances       Attendance[]
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  title       String
+  url         String
+  type        String
+  createdAt   DateTime  @default(now())
+}
+
+model Project {
+  id            String          @id @default(uuid())
+  title         String
+  slug          String          @unique
+  description   String
+  shortDesc     String?
+  category      ProjectCategory
+  status        ProjectStatus   @default(PLANNING)
+  impactMetrics Json?
+  images        String[]
+  featured      Boolean         @default(false)
+  startDate     DateTime?
+  endDate       DateTime?
+  location      String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  gallery       Gallery[]
+}
+
+model Event {
+  id            String      @id @default(uuid())
+  title         String
+  slug          String      @unique
+  description   String
+  date          DateTime
+  endDate       DateTime?
+  location      String
+  maxAttendees  Int?
+  status        EventStatus @default(UPCOMING)
+  images        String[]
+  featured      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  registrations EventRegistration[]
+  gallery       Gallery[]
+  attendances   Attendance[]
+}
+
+model EventRegistration {
+  id          String    @id @default(uuid())
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  registeredAt DateTime @default(now())
+  status      String    @default("registered")
+
+  @@unique([eventId, volunteerId])
+}
+
+model Donation {
+  id            String         @id @default(uuid())
+  donorName     String
+  donorEmail    String
+  donorPhone    String?
+  amount        Float
+  currency      String         @default("INR")
+  type          DonationType   @default(ONE_TIME)
+  status        DonationStatus @default(PENDING)
+  campaignId    String?
+  campaign      DonationCampaign? @relation(fields: [campaignId], references: [id])
+  transactionId String?
+  message       String?
+  isAnonymous   Boolean        @default(false)
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model DonationCampaign {
+  id          String     @id @default(uuid())
+  title       String
+  description String
+  goal        Float
+  raised      Float      @default(0)
+  image       String?
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  donations   Donation[]
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  hours       Float?
+  volunteerId String
+  volunteer   Volunteer  @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Certificate {
+  id          String    @id @default(uuid())
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  url         String?
+  issuedAt    DateTime  @default(now())
+}
+
+model Achievement {
+  id          String    @id @default(uuid())
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  icon        String?
+  earnedAt    DateTime  @default(now())
+}
+
+model Gallery {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  url         String
+  type        GalleryType @default(IMAGE)
+  albumId     String?
+  projectId   String?
+  project     Project?    @relation(fields: [projectId], references: [id])
+  eventId     String?
+  event       Event?      @relation(fields: [eventId], references: [id])
+  featured    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+}
+
+model Report {
+  id         String     @id @default(uuid())
+  reportType ReportType
+  title      String
+  data       Json
+  generatedBy String?
+  createdAt  DateTime   @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id        String           @id @default(uuid())
+  title     String
+  content   String
+  type      AnnouncementType @default(GENERAL)
+  isActive  Boolean          @default(true)
+  authorId  String?
+  author    User?            @relation(fields: [authorId], references: [id])
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Newsletter {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  userId    String?  @unique
+  user      User?    @relation(fields: [userId], references: [id])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Attendance {
+  id          String    @id @default(uuid())
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  checkIn     DateTime  @default(now())
+  checkOut    DateTime?
+  hours       Float?
+
+  @@unique([eventId, volunteerId])
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  bio       String?
+  photo     String?
+  email     String?
+  isBoard   Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  name      String
+  role      String?
+  content   String
+  photo     String?
+  rating    Int      @default(5)
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model NewsArticle {
+  id        String   @id @default(uuid())
+  title     String
+  slug      String   @unique
+  excerpt   String
+  content   String
+  image     String?
+  author    String?
+  featured  Boolean  @default(false)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value Json
+}
