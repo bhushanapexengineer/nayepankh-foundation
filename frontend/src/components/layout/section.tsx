@@ -28,8 +28,8 @@ export function SectionHeader({ title, subtitle, centered = true }: SectionHeade
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
       className={`mb-12 ${centered ? 'text-center' : ''}`}
     >
       <h2 className="font-heading text-3xl font-bold text-foreground dark:text-dark-foreground lg:text-4xl">{title}</h2>
@@ -42,10 +42,10 @@ export function SectionHeader({ title, subtitle, centered = true }: SectionHeade
 export function FadeIn({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.4, delay, ease: 'easeOut' }}
     >
       {children}
     </motion.div>

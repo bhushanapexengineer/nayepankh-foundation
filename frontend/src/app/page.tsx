@@ -44,7 +44,17 @@ export default function HomePage() {
     <>
       {/* Hero */}
       <section className="relative flex min-h-[90vh] items-center overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 dark:from-primary/10 dark:via-dark dark:to-secondary/10">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1920')] bg-cover bg-center opacity-5" />
+        {/* subtle background image via Next/Image for reliability */}
+        <div className="absolute inset-0 pointer-events-none select-none">
+          <Image
+            src="https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1920"
+            alt=""
+            fill
+            className="object-cover object-center opacity-5"
+            priority
+            sizes="100vw"
+          />
+        </div>
         <div className="container relative mx-auto px-4 py-20 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
@@ -65,8 +75,18 @@ export default function HomePage() {
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.2 }} className="relative hidden lg:block">
-              <div className="relative aspect-square max-w-lg mx-auto">
-                <Image src="https://images.unsplash.com/photo-1559027615-cd4628903329?w=800" alt="Volunteers helping community" fill className="rounded-2xl object-cover shadow-soft-lg" priority />
+              {/* Fixed: use a defined width/height instead of fill so the image always renders */}
+              <div className="relative mx-auto max-w-lg">
+                <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+                  <Image
+                    src="https://images.unsplash.com/photo-1559027615-cd4628903329?w=800"
+                    alt="Volunteers helping community"
+                    fill
+                    className="rounded-2xl object-cover shadow-soft-lg"
+                    priority
+                    sizes="(max-width: 1024px) 0px, 512px"
+                  />
+                </div>
                 <div className="absolute -bottom-6 -left-6 rounded-xl bg-white p-4 shadow-soft-lg dark:bg-dark">
                   <p className="text-2xl font-bold text-primary">{stats.volunteers.toLocaleString()}+</p>
                   <p className="text-sm text-muted-foreground">Active Volunteers</p>
