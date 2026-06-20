@@ -47,6 +47,11 @@ export default function LoginPage() {
 
         <Card className="border-none shadow-soft">
           <CardContent className="p-6">
+            {/* Demo credentials hint */}
+            <div className="mb-4 rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
+              <p className="font-semibold text-primary mb-1">Demo Login Credentials</p>
+              <p>Admin: <span className="font-mono">admin@nayepankh.org</span> / <span className="font-mono">Admin@123</span></p>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && <div className="rounded-md bg-error/10 p-3 text-sm text-error">{error}</div>}
               <div>

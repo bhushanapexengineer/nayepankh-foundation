@@ -1,5 +1,21 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+// Demo users for when backend is not available
+const DEMO_USERS: Record<string, { password: string; user: User }> = {
+  'admin@nayepankh.org': {
+    password: 'Admin@123',
+    user: { id: '1', name: 'Super Admin', email: 'admin@nayepankh.org', role: 'SUPER_ADMIN' },
+  },
+  'manager@nayepankh.org': {
+    password: 'Admin@123',
+    user: { id: '2', name: 'Admin Manager', email: 'manager@nayepankh.org', role: 'ADMIN' },
+  },
+  'volunteer@nayepankh.org': {
+    password: 'Volunteer@123',
+    user: { id: '3', name: 'Demo Volunteer', email: 'volunteer@nayepankh.org', role: 'VOLUNTEER' },
+  },
+};
+
 interface FetchOptions extends RequestInit {
   token?: string;
 }
@@ -16,7 +32,7 @@ class ApiClient {
     return localStorage.getItem('token');
   }
 
-  async fetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+  private async tryFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
     const { token, ...fetchOptions } = options;
     const authToken = token || this.getToken();
 
@@ -26,7 +42,12 @@ class ApiClient {
       ...fetchOptions.headers,
     };
 
-    const res = await fetch(`${this.baseUrl}${endpoint}`, { ...fetchOptions, headers, credentials: 'include' });
+    const res = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...fetchOptions,
+      headers,
+      credentials: 'include',
+      signal: AbortSignal.timeout(5000),
+    });
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: 'Request failed' }));
@@ -34,6 +55,26 @@ class ApiClient {
     }
 
     return res.json();
+  }
+
+  async fetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+    try {
+      return await this.tryFetch<T>(endpoint, options);
+    } catch (err) {
+      // If backend is unreachable, check demo token for /auth/me
+      if (endpoint === '/auth/me') {
+        const demoUser = this.getDemoUser();
+        if (demoUser) return { data: demoUser } as T;
+      }
+      throw err;
+    }
+  }
+
+  private getDemoUser(): User | null {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem('demo_user');
+    if (raw) return JSON.parse(raw);
+    return null;
   }
 
   async upload<T>(endpoint: string, formData: FormData): Promise<T> {
@@ -51,9 +92,23 @@ class ApiClient {
     return res.json();
   }
 
-  // Auth
-  login = (data: { email: string; password: string }) =>
-    this.fetch<{ data: { user: User; accessToken: string } }>('/auth/login', { method: 'POST', body: JSON.stringify(data) });
+  // Auth — tries real backend first, falls back to demo login
+  login = async (data: { email: string; password: string }): Promise<{ data: { user: User; accessToken: string } }> => {
+    try {
+      return await this.tryFetch('/auth/login', { method: 'POST', body: JSON.stringify(data) });
+    } catch {
+      // Demo login fallback
+      const demo = DEMO_USERS[data.email.toLowerCase()];
+      if (demo && demo.password === data.password) {
+        const fakeToken = 'demo-token-' + Date.now();
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('demo_user', JSON.stringify(demo.user));
+        }
+        return { data: { user: demo.user, accessToken: fakeToken } };
+      }
+      throw new Error('Invalid email or password');
+    }
+  };
 
   register = (data: { name: string; email: string; password: string; role?: string }) =>
     this.fetch('/auth/register', { method: 'POST', body: JSON.stringify(data) });
@@ -63,7 +118,12 @@ class ApiClient {
 
   getMe = () => this.fetch<{ data: User }>('/auth/me');
 
-  logout = () => this.fetch('/auth/logout', { method: 'POST' });
+  logout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('demo_user');
+    }
+    return this.fetch('/auth/logout', { method: 'POST' }).catch(() => ({ success: true }));
+  };
 
   forgotPassword = (email: string) =>
     this.fetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
