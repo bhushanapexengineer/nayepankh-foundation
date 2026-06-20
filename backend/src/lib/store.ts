@@ -184,7 +184,9 @@ export interface Database {
   newsletters: { id: string; email: string; createdAt: string }[];
 }
 
-const DATA_DIR = path.join(__dirname, '../data');
+const DATA_DIR = process.env.NODE_ENV === 'production'
+  ? path.join('/tmp', 'nayepankh-data')
+  : path.join(__dirname, '../data');
 const DATA_FILE = path.join(DATA_DIR, 'db.json');
 
 async function hash(pw: string) {
